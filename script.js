@@ -121,6 +121,7 @@ async function onScanSuccess(decodedText) {
         );
 
         const data = await response.json();
+        console.log("API Response:", data);
 
         if (data.status === "checked_in") {
 
