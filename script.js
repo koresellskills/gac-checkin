@@ -19,14 +19,39 @@ async function startScanner() {
 
     try {
 
+        const cameras = await Html5Qrcode.getCameras();
+
+        console.table(cameras);
+
+        if (cameras.length === 0) {
+            throw new Error("No cameras found.");
+        }
+
+        // Default to first camera
+        let cameraId = cameras[0].id;
+
+        // Prefer the back/rear/environment camera
+        for (const camera of cameras) {
+
+            const label = camera.label.toLowerCase();
+
+            if (
+                label.includes("back") ||
+                label.includes("rear") ||
+                label.includes("environment")
+            ) {
+                cameraId = camera.id;
+                break;
+            }
+
+        }
+
+        console.log("Using camera:", cameraId);
+
         html5QrCode = new Html5Qrcode("reader");
 
-        console.log("Scanner object created");
-
         await html5QrCode.start(
-            {
-                facingMode: "environment" // Use back camera on phones
-            },
+            cameraId,
             {
                 fps: 10,
                 qrbox: {
@@ -35,8 +60,8 @@ async function startScanner() {
                 }
             },
             onScanSuccess,
-            function (errorMessage) {
-                // Ignore continuous scan errors
+            function () {
+                // Ignore continuous scan failures
             }
         );
 
@@ -44,9 +69,10 @@ async function startScanner() {
 
     } catch (err) {
 
-        console.error("START ERROR:", err);
+        console.error(err);
 
         result.innerHTML = "❌ " + err;
+
         scanButton.disabled = false;
 
     }
