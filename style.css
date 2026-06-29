@@ -63,3 +63,79 @@ h1 {
     font-size: 18px;
     font-weight: bold;
 }
+
+.success-card,
+.warning-card,
+.error-card{
+
+    margin-top:25px;
+
+    padding:25px;
+
+    border-radius:18px;
+
+    text-align:left;
+
+    color:white;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.18);
+
+    animation:fadeIn .4s ease;
+
+}
+
+.success-card{
+
+    background:#16a34a;
+
+}
+
+.warning-card{
+
+    background:#f59e0b;
+
+}
+
+.error-card{
+
+    background:#dc2626;
+
+}
+
+.success-card h2,
+.warning-card h2,
+.error-card h2{
+
+    margin-bottom:15px;
+
+}
+
+.success-card p,
+.warning-card p,
+.error-card p{
+
+    font-size:18px;
+
+    margin:8px 0;
+
+}
+
+@keyframes fadeIn{
+
+from{
+
+opacity:0;
+
+transform:translateY(20px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+}
