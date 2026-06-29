@@ -1,4 +1,5 @@
 console.log("script.js loaded");
+
 let html5QrCode = null;
 let scanning = false;
 
@@ -11,35 +12,42 @@ async function startScanner() {
 
     console.log("startScanner() called");
 
+    scanButton.disabled = true;
+    scanning = true;
+
+    result.innerHTML = "Starting camera...";
+
     try {
-
-        const cameras = await Html5Qrcode.getCameras();
-
-        console.table(cameras);
-
-        const cameraId = cameras[0].id;
 
         html5QrCode = new Html5Qrcode("reader");
 
         console.log("Scanner object created");
 
         await html5QrCode.start(
-            cameraId,
+            {
+                facingMode: "environment" // Use back camera on phones
+            },
             {
                 fps: 10,
-                qrbox: 250
+                qrbox: {
+                    width: 300,
+                    height: 300
+                }
             },
-            function(decodedText) {
-                console.log("QR DETECTED:", decodedText);
-                alert(decodedText);
+            onScanSuccess,
+            function (errorMessage) {
+                // Ignore continuous scan errors
             }
         );
 
         console.log("Scanner started");
 
-    } catch(err) {
+    } catch (err) {
 
         console.error("START ERROR:", err);
+
+        result.innerHTML = "❌ " + err;
+        scanButton.disabled = false;
 
     }
 
@@ -47,14 +55,22 @@ async function startScanner() {
 
 async function onScanSuccess(decodedText) {
 
-    console.log("QR:", decodedText);
-
-    // Prevent duplicate scans
     if (!scanning) return;
 
     scanning = false;
 
+    console.log("QR DETECTED:", decodedText);
+
     result.innerHTML = "<h3>Checking attendee...</h3>";
+
+    try {
+
+        await html5QrCode.stop();
+        await html5QrCode.clear();
+
+    } catch (e) {
+        console.log(e);
+    }
 
     try {
 
@@ -81,14 +97,10 @@ async function onScanSuccess(decodedText) {
 
     }
 
-    try {
-        await html5QrCode.stop();
-        await html5QrCode.clear();
-    } catch(e) {}
-
     scanButton.disabled = false;
 
 }
-document.getElementById("scanButton").addEventListener("click", function () {
+
+scanButton.addEventListener("click", function () {
     console.log("Button clicked");
 });
