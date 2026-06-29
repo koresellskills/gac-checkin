@@ -24,50 +24,52 @@ async function startScanner() {
         console.table(cameras);
 
         if (cameras.length === 0) {
-            throw new Error("No cameras found.");
+            throw new Error("No camera found.");
         }
 
-        // Default to first camera
+        // Prefer the back camera if available
         let cameraId = cameras[0].id;
 
-        // Prefer the back/rear/environment camera
-        for (const camera of cameras) {
+        const backCamera = cameras.find(camera =>
 
-            const label = camera.label.toLowerCase();
+            camera.label.toLowerCase().includes("back") ||
+            camera.label.toLowerCase().includes("rear") ||
+            camera.label.toLowerCase().includes("environment")
 
-            if (
-                label.includes("back") ||
-                label.includes("rear") ||
-                label.includes("environment")
-            ) {
-                cameraId = camera.id;
-                break;
-            }
+        );
 
+        if (backCamera) {
+            cameraId = backCamera.id;
         }
 
         console.log("Using camera:", cameraId);
 
         html5QrCode = new Html5Qrcode("reader");
 
+        console.log("Scanner object created");
+
         await html5QrCode.start(
+
             cameraId,
+
             {
                 fps: 10,
-                qrbox: {
-                    width: 300,
-                    height: 300
-                }
+                qrbox: 250
             },
+
             onScanSuccess,
-            function () {
+
+            function(errorMessage) {
                 // Ignore continuous scan failures
             }
+
         );
 
         console.log("Scanner started");
 
-    } catch (err) {
+    }
+
+    catch(err) {
 
         console.error(err);
 
@@ -85,7 +87,7 @@ async function onScanSuccess(decodedText) {
 
     scanning = false;
 
-    console.log("QR DETECTED:", decodedText);
+    console.log("QR:", decodedText);
 
     result.innerHTML = "<h3>Checking attendee...</h3>";
 
@@ -94,28 +96,93 @@ async function onScanSuccess(decodedText) {
         await html5QrCode.stop();
         await html5QrCode.clear();
 
-    } catch (e) {
-        console.log(e);
-    }
+    } catch(e) {}
 
     try {
 
         const response = await fetch(
+
             "https://script.google.com/macros/s/AKfycbyF4uc5j5O9aMbRr8uqGAz1FJ3HC_bscdMdGgRk2Cx90tzO2U5C3RgNSCUcWQUA5PnZpg/exec",
+
             {
+
                 method: "POST",
+
                 headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
+
+                    "Content-Type":"application/x-www-form-urlencoded"
+
                 },
-                body: "registrationID=" + encodeURIComponent(decodedText)
+
+                body:"registrationID="+encodeURIComponent(decodedText)
+
             }
+
         );
 
         const data = await response.json();
 
-        result.innerHTML = `<pre>${data.message}</pre>`;
+        if (data.status === "checked_in") {
 
-    } catch (err) {
+            result.innerHTML = `
+                <div class="success-card">
+
+                    <h2>✅ CHECK-IN SUCCESSFUL</h2>
+
+                    <p>👤 <strong>${data.name}</strong></p>
+
+                    <p>🎓 ${data.category}</p>
+
+                    <p>🏫 ${data.institution}</p>
+
+                    <p>🆔 ${data.registrationID}</p>
+
+                    <p>📅 ${data.checkInDate}</p>
+
+                    <p>🕒 ${data.checkInTime}</p>
+
+                </div>
+            `;
+
+        }
+
+        else if (data.status === "already_checked_in") {
+
+            result.innerHTML = `
+                <div class="warning-card">
+
+                    <h2>⚠️ ALREADY CHECKED IN</h2>
+
+                    <p>👤 <strong>${data.name}</strong></p>
+
+                    <p>🆔 ${data.registrationID}</p>
+
+                    <p>📅 ${data.checkInDate}</p>
+
+                    <p>🕒 ${data.checkInTime}</p>
+
+                </div>
+            `;
+
+        }
+
+        else {
+
+            result.innerHTML = `
+                <div class="error-card">
+
+                    <h2>❌ REGISTRATION NOT FOUND</h2>
+
+                    <p>Please verify the QR Code.</p>
+
+                </div>
+            `;
+
+        }
+
+    }
+
+    catch(err) {
 
         console.error(err);
 
@@ -128,5 +195,7 @@ async function onScanSuccess(decodedText) {
 }
 
 scanButton.addEventListener("click", function () {
+
     console.log("Button clicked");
+
 });
